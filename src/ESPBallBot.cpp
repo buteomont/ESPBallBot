@@ -28,7 +28,7 @@ struct instruction
 	float y;
   };
 
-void lowerPen(bool);
+void raisePen(bool);
 
 #define PEN_PIN D4 //D10
 #define PEN_DRAWING 120
@@ -38,7 +38,7 @@ Servo pen;
 
 Stepper x(D1, D2);
 Stepper y(D5, D6);
-Draw2D draw(x, y, 0, 0, lowerPen);
+Draw2D draw(x, y, 0, 0, raisePen);
 
 struct instruction *instructions = NULL;
 uint16_t instruction_index;
@@ -47,8 +47,8 @@ uint16_t instruction_count = 0;
 #define PEN_UP true
 #define PEN_DOWN false
 
-//Raise (false) or lower (true) the pen
-void lowerPen(bool status)
+//Raise (true) or lower (false) the pen
+void raisePen(bool status)
   {
 	if(status != penStatus)
 	  {
@@ -56,6 +56,7 @@ void lowerPen(bool status)
 		  {
 			pen.write(PEN_MOVING);
 			delay(50); //don't move anything until pen is up
+      LOGLN("*** Pen is up ***");
 		  }
 		else //lowering pen
 		  {
@@ -66,9 +67,17 @@ void lowerPen(bool status)
 				pen.write(angle);
 				delay(30);
 			  }
+      LOGLN("*** Pen is down ***");
 		  }
 		penStatus = status;
 	  }
+  else
+    {
+    LOG("*** Pen already ");
+    LOG(status?"up":"down");
+    LOGLN(" ***");
+    
+    }
   }
 
 void setup()
@@ -87,9 +96,9 @@ void setup()
 	y.init();
 	y.setSpeed(100);
 	delay(1000);
-	lowerPen(PEN_DOWN);
+	raisePen(PEN_DOWN);
 	delay(1000);
-	lowerPen(PEN_UP);
+	raisePen(PEN_UP);
 }
 
 //line looks like "G1 X119.448 Y15.515 E1.48456"
@@ -152,7 +161,7 @@ void action(char* line)
 
     switch(ins.op)
       {
-        case OP_MOVE:  //0
+        case OP_MOVE:  //G0
           LOG("Moving to ");
           LOG(ins.x);
           LOG(", ");
@@ -160,7 +169,7 @@ void action(char* line)
           draw.moveTo(ins.x, ins.y);
           break;
 
-        case OP_LINE: //1 
+        case OP_LINE: //G1 
           LOG("Line to ");
           LOG(ins.x);
           LOG(", ");
@@ -168,21 +177,21 @@ void action(char* line)
           draw.lineTo(ins.x, ins.y);
           break;
 
-        case OP_MOVE_REL:  //2
-          LOG("Relative move to ");
-          LOG(ins.x);
-          LOG(", ");
-          LOGLN(ins.y);
-          draw.move(ins.x, ins.y);
-          break;
+        // case OP_MOVE_REL:  //G2
+        //   LOG("Relative move to ");
+        //   LOG(ins.x);
+        //   LOG(", ");
+        //   LOGLN(ins.y);
+        //   draw.move(ins.x, ins.y);
+        //   break;
 
-        case OP_LINE_REL: //3
-          LOG("Relative line to ");
-          LOG(ins.x);
-          LOG(", ");
-          LOGLN(ins.y);
-          draw.line(ins.x, ins.y);
-          break;
+        // case OP_LINE_REL: //G3
+        //   LOG("Relative line to ");
+        //   LOG(ins.x);
+        //   LOG(", ");
+        //   LOGLN(ins.y);
+        //   draw.line(ins.x, ins.y);
+        //   break;
       }
     }
   // String retval="Instruction:\nop=";
